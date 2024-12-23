@@ -10,7 +10,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
-# Load the dataset
+# Load the dataset from the repository
 df = pd.read_csv("CAR DETAILS.csv")
 
 # Check for null values
@@ -25,7 +25,12 @@ df.drop(columns=["name", "year"], inplace=True)
 
 # Handle categorical variables
 categorical_cols = ["fuel", "seller_type", "transmission", "owner"]
-df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+encoder = OneHotEncoder(sparse_output=False, drop_first=True, handle_unknown='ignore')
+df_encoded = pd.DataFrame(encoder.fit_transform(df[categorical_cols]), columns=encoder.get_feature_names_out(categorical_cols))
+
+# Concatenate the encoded columns
+df = df.drop(categorical_cols, axis=1)
+df = pd.concat([df, df_encoded], axis=1)
 
 # Verify dataset
 print(df.head())
@@ -79,9 +84,7 @@ df["segment"] = kmeans.fit_predict(cluster_data_scaled)
 
 # Visualize the clusters
 plt.figure(figsize=(10, 6))
-sns.scatterplot(
-    x="km_driven", y="selling_price", hue="segment", data=df, palette="Set1"
-)
+sns.scatterplot(x="km_driven", y="selling_price", hue="segment", data=df, palette="Set1")
 plt.title("Car Segments Based on Price, Kilometers Driven, and Age")
 plt.xlabel("Kilometers Driven")
 plt.ylabel("Selling Price")
@@ -89,9 +92,7 @@ plt.legend(title="Segment")
 plt.show()
 
 # Prepare Data for ML Modeling
-X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled, y, test_size=0.2, random_state=42
-)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
 # Train Machine Learning Models
 # Linear Regression
@@ -109,7 +110,6 @@ gb = GradientBoostingRegressor()
 gb.fit(X_train, y_train)
 y_pred_gb = gb.predict(X_test)
 
-
 # Evaluation Function
 def evaluate_model(y_test, y_pred, model_name):
     mae = mean_absolute_error(y_test, y_pred)
@@ -117,7 +117,6 @@ def evaluate_model(y_test, y_pred, model_name):
     rmse = mse**0.5
     r2 = r2_score(y_test, y_pred)
     print(f"{model_name} - MAE: {mae}, MSE: {mse}, RMSE: {rmse}, R²: {r2}")
-
 
 evaluate_model(y_test, y_pred_lr, "Linear Regression")
 evaluate_model(y_test, y_pred_rf, "Random Forest")
@@ -146,16 +145,8 @@ y_sample = sample_data["selling_price"]
 print("Null values in sample data before encoding:")
 print(X_sample.isnull().sum())
 
-# Load the scaler, encoder, and model
-scaler = joblib.load("scaler.pkl")
-encoder = joblib.load("encoder.pkl")
-loaded_model = joblib.load("best_model_compressed.pkl")
-
 # Encode sample data
-X_sample_encoded = pd.DataFrame(
-    encoder.transform(X_sample[categorical_cols]),
-    columns=encoder.get_feature_names_out(categorical_cols),
-)
+X_sample_encoded = pd.DataFrame(encoder.transform(X_sample[categorical_cols]), columns=encoder.get_feature_names_out(categorical_cols))
 print("X_sample_encoded shape:", X_sample_encoded.shape)
 
 # Drop original categorical columns
@@ -178,6 +169,7 @@ print("X_sample shape after reindexing:", X_sample.shape)
 X_sample_scaled = scaler.transform(X_sample)
 
 # Predict using the loaded model
+loaded_model = joblib.load("best_model_compressed.pkl")
 y_sample_pred = loaded_model.predict(X_sample_scaled)
 
 # Verify the lengths match before creating DataFrame
@@ -185,9 +177,7 @@ if len(y_sample.values) == len(y_sample_pred):
     results = pd.DataFrame({"Actual": y_sample.values, "Predicted": y_sample_pred})
     print(results)
 else:
-    print(
-        f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len(y_sample_pred)}"
-    )
+    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len[y_sample_pred]}")
 
 # Evaluate the model on the sampled dataset
 if len(y_sample.values) == len(y_sample_pred):
