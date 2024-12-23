@@ -39,6 +39,9 @@ print(df.head())
 X = df.drop(columns=["selling_price"])
 y = df["selling_price"]
 
+# Ensure X is a DataFrame
+X = pd.DataFrame(X, columns=df.drop(columns=["selling_price"]).columns)
+
 # Ensure no infinite or NaN values
 X = np.nan_to_num(X)
 y = np.nan_to_num(y)
@@ -175,10 +178,7 @@ X_sample = pd.concat([X_sample, X_sample_encoded], axis=1)
 print("X_sample shape after concatenation:", X_sample.shape)
 
 # Ensure the columns match those of the training data
-if hasattr(X, 'columns'):
-    X_sample = X_sample.reindex(columns=X.columns, fill_value=0)
-else:
-    raise AttributeError("X does not have a 'columns' attribute")
+X_sample = X_sample.reindex(columns=X.columns, fill_value=0)
 print("X_sample shape after reindexing:", X_sample.shape)
 
 # Ensure no infinite or NaN values in sample data
