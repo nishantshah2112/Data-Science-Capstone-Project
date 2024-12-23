@@ -25,8 +25,8 @@ df.drop(columns=["name", "year"], inplace=True)
 
 # Handle categorical variables
 categorical_cols = ["fuel", "seller_type", "transmission", "owner"]
-encoder = OneHotEncoder(sparse_output=False, drop_first=True, handle_unknown='ignore')
-df_encoded = pd.DataFrame(encoder.fit_transform(df[categorical_cols]), columns=encoder.get_feature_names_out(categorical_cols))
+encoder = OneHotEncoder(drop='first', handle_unknown='ignore')
+df_encoded = pd.DataFrame(encoder.fit_transform(df[categorical_cols]).toarray(), columns=encoder.get_feature_names_out(categorical_cols))
 
 # Concatenate the encoded columns
 df = df.drop(categorical_cols, axis=1)
@@ -146,7 +146,7 @@ print("Null values in sample data before encoding:")
 print(X_sample.isnull().sum())
 
 # Encode sample data
-X_sample_encoded = pd.DataFrame(encoder.transform(X_sample[categorical_cols]), columns=encoder.get_feature_names_out(categorical_cols))
+X_sample_encoded = pd.DataFrame(encoder.transform(X_sample[categorical_cols]).toarray(), columns=encoder.get_feature_names_out(categorical_cols))
 print("X_sample_encoded shape:", X_sample_encoded.shape)
 
 # Drop original categorical columns
@@ -177,7 +177,7 @@ if len(y_sample.values) == len(y_sample_pred):
     results = pd.DataFrame({"Actual": y_sample.values, "Predicted": y_sample_pred})
     print(results)
 else:
-    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len[y_sample_pred]}")
+    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len(y_sample_pred)}")
 
 # Evaluate the model on the sampled dataset
 if len(y_sample.values) == len(y_sample_pred):
