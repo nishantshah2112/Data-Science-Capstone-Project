@@ -38,11 +38,13 @@ print(df.head())
 # Handle Null Values, One-Hot Encoding, Imputation, and Scaling
 X = df.drop(columns=["selling_price"])
 y = df["selling_price"]
+
+# Ensure no infinite or NaN values
+X = np.nan_to_num(X)
+y = np.nan_to_num(y)
+
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
-
-# Ensure all values are finite
-X_scaled = np.nan_to_num(X_scaled)
 
 # Perform EDA and Graphical Analysis
 print(df.head())
@@ -98,6 +100,12 @@ plt.show()
 
 # Prepare Data for ML Modeling
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Ensure no infinite or NaN values in train/test data
+X_train = np.nan_to_num(X_train)
+X_test = np.nan_to_num(X_test)
+y_train = np.nan_to_num(y_train)
+y_test = np.nan_to_num(y_test)
 
 # Train Machine Learning Models
 # Linear Regression
@@ -170,8 +178,8 @@ print("X_sample shape after concatenation:", X_sample.shape)
 X_sample = X_sample.reindex(columns=X.columns, fill_value=0)
 print("X_sample shape after reindexing:", X_sample.shape)
 
-# Scale the sample data
-X_sample_scaled = scaler.transform(X_sample)
+# Ensure no infinite or NaN values in sample data
+X_sample_scaled = np.nan_to_num(scaler.transform(X_sample))
 
 # Predict using the loaded model
 loaded_model = joblib.load("best_model_compressed.pkl")
