@@ -175,7 +175,10 @@ X_sample = pd.concat([X_sample, X_sample_encoded], axis=1)
 print("X_sample shape after concatenation:", X_sample.shape)
 
 # Ensure the columns match those of the training data
-X_sample = X_sample.reindex(columns=X.columns, fill_value=0)
+if hasattr(X, 'columns'):
+    X_sample = X_sample.reindex(columns=X.columns, fill_value=0)
+else:
+    raise AttributeError("X does not have a 'columns' attribute")
 print("X_sample shape after reindexing:", X_sample.shape)
 
 # Ensure no infinite or NaN values in sample data
@@ -190,7 +193,7 @@ if len(y_sample.values) == len(y_sample_pred):
     results = pd.DataFrame({"Actual": y_sample.values, "Predicted": y_sample_pred})
     print(results)
 else:
-    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len[y_sample_pred]}")
+    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len(y_sample_pred]}")
 
 # Evaluate the model on the sampled dataset
 if len(y_sample.values) == len(y_sample_pred):
