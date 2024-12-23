@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
 # Load the dataset
-df = pd.read_csv(r"C:\NISHANT\skill acadamy\Capstone Project\CAR DETAILS.csv")
+df = pd.read_csv("CAR DETAILS.csv")
 
 # Check for null values
 print("Null values:\n", df.isnull().sum())
@@ -132,7 +132,7 @@ joblib.dump(encoder, "encoder.pkl")
 
 # Load the saved model and test on a new dataset
 # Load the original dataset
-df = pd.read_csv(r"C:\NISHANT\skill acadamy\Capstone Project\CAR DETAILS.csv")
+df = pd.read_csv("CAR DETAILS.csv")
 
 # Randomly pick 20 data points
 np.random.seed(42)
