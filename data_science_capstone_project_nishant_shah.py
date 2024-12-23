@@ -41,6 +41,9 @@ y = df["selling_price"]
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
+# Ensure all values are finite
+X_scaled = np.nan_to_num(X_scaled)
+
 # Perform EDA and Graphical Analysis
 print(df.head())
 
@@ -75,8 +78,10 @@ plt.show()
 cluster_data = df[["selling_price", "km_driven", "age"]]
 
 # Normalize the data
-scaler = StandardScaler()
 cluster_data_scaled = scaler.fit_transform(cluster_data)
+
+# Ensure all values are finite
+cluster_data_scaled = np.nan_to_num(cluster_data_scaled)
 
 # Apply K-Means clustering
 kmeans = KMeans(n_clusters=3, random_state=100)
@@ -177,7 +182,7 @@ if len(y_sample.values) == len(y_sample_pred):
     results = pd.DataFrame({"Actual": y_sample.values, "Predicted": y_sample_pred})
     print(results)
 else:
-    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len(y_sample_pred)}")
+    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len[y_sample_pred]}")
 
 # Evaluate the model on the sampled dataset
 if len(y_sample.values) == len(y_sample_pred):
