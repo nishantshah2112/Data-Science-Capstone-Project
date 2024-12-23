@@ -193,7 +193,7 @@ if len(y_sample.values) == len(y_sample_pred):
     results = pd.DataFrame({"Actual": y_sample.values, "Predicted": y_sample_pred})
     print(results)
 else:
-    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len(y_sample_pred]}")
+    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len(y_sample_pred)}")
 
 # Evaluate the model on the sampled dataset
 if len(y_sample.values) == len(y_sample_pred):
