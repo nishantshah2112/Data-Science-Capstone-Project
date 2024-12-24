@@ -35,6 +35,8 @@ try:
     df["age"] = 2024 - df["year"]
     df.drop(columns=["name", "year"], inplace=True)
     categorical_cols = ["fuel", "seller_type", "transmission", "owner"]
+    # Create a copy of the dataset for EDA before encoding
+    eda_df = df.copy()
     df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 except KeyError as e:
     st.error(f"KeyError: {e}. Ensure your dataset contains the expected columns.")
@@ -102,7 +104,6 @@ if uploaded_file is not None:
 
 # Visualizations
 st.subheader("Visualizations")
-eda_df = df.copy()
 
 if st.checkbox("Show Visualizations"):
     # Price Distribution Across Different Car Ages
