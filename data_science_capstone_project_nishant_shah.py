@@ -92,13 +92,16 @@ if uploaded_file is not None:
     try:
         sample_data["age"] = 2024 - sample_data["year"]
         sample_data.drop(columns=["name", "year"], inplace=True)
+        original_columns = sample_data[["age", "fuel", "km_driven", "selling_price"]].copy()
         sample_data = pd.get_dummies(sample_data, columns=categorical_cols, drop_first=True)
         sample_data = sample_data.reindex(columns=X.columns, fill_value=0)
         sample_data_scaled = scaler.transform(sample_data)
 
         predictions = best_model.predict(sample_data_scaled)
+        original_columns["Predicted Selling Price"] = predictions
+
         st.write("Predictions:")
-        st.write(pd.DataFrame({"Predicted Selling Price": predictions}))
+        st.write(original_columns)
     except KeyError as e:
         st.error(f"KeyError: {e}. Ensure the uploaded data matches the required format.")
 
