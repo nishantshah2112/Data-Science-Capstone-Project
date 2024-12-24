@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -8,197 +8,110 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import joblib
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
+import streamlit as st
 
-# Load the dataset from the repository
-df = pd.read_csv("CAR DETAILS.csv")
+# Streamlit app title
+st.title("Car Price Prediction App")
 
-# Check for null values
-print("Null values:\n", df.isnull().sum())
 
-# Drop duplicates
-df = df.drop_duplicates()
+# Load the dataset
+@st.cache
+def load_data():
+    return pd.read_csv("CAR DETAILS.csv")
 
-# Add a new feature for car age and drop "year"
+
+try:
+    df = load_data()
+except FileNotFoundError:
+    st.error(
+        "Dataset not found! Please ensure 'CAR DETAILS.csv' is in the same directory as the script."
+    )
+    st.stop()
+
+# Display dataset preview
+if st.checkbox("Show Dataset Preview"):
+    st.write(df.head())
+
+# Data preprocessing
+st.subheader("Data Preprocessing")
 df["age"] = 2024 - df["year"]
 df.drop(columns=["name", "year"], inplace=True)
-
-# Handle categorical variables
 categorical_cols = ["fuel", "seller_type", "transmission", "owner"]
-encoder = OneHotEncoder(drop='first', handle_unknown='ignore')
-df_encoded = pd.DataFrame(encoder.fit_transform(df[categorical_cols]).toarray(), columns=encoder.get_feature_names_out(categorical_cols))
+df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
-# Concatenate the encoded columns
-df = df.drop(categorical_cols, axis=1)
-df = pd.concat([df, df_encoded], axis=1)
-
-# Verify dataset
-print(df.head())
-
-# Handle Null Values, One-Hot Encoding, Imputation, and Scaling
+# Scaling the data
 X = df.drop(columns=["selling_price"])
 y = df["selling_price"]
-
-# Ensure X is a DataFrame
-X = pd.DataFrame(X, columns=df.drop(columns=["selling_price"]).columns)
-
-# Ensure no infinite or NaN values
-X = np.nan_to_num(X)
-y = np.nan_to_num(y)
-
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Perform EDA and Graphical Analysis
-print(df.head())
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42
+)
 
-# Price Distribution Across Different Car Ages
-plt.figure(figsize=(15, 8))
-sns.boxplot(x="age", y="selling_price", data=df)
-plt.title("Price Distribution Across Different Car Ages")
-plt.xlabel("Age of the Car")
-plt.ylabel("Selling Price")
-plt.xticks(rotation=45)
-plt.show()
-
-# Analysis of Seller Type and Its Impact on Selling Price
-plt.figure(figsize=(8, 6))
-sns.boxplot(x="seller_type_Individual", y="selling_price", data=df)
-plt.title("Seller Type vs Selling Price")
-plt.xlabel("Seller Type")
-plt.ylabel("Selling Price")
-plt.show()
-
-# Correlation Between Kilometers Driven and Selling Price for Different Fuel Types
-plt.figure(figsize=(12, 8))
-sns.scatterplot(x="km_driven", y="selling_price", hue="fuel_Petrol", data=df)
-plt.title("Kilometers Driven vs Selling Price for Different Fuel Types")
-plt.xlabel("Kilometers Driven")
-plt.ylabel("Selling Price")
-plt.legend(title="Fuel Type")
-plt.show()
-
-# Predicting the Most Popular Car Segments Based on Features
-# Select relevant features for clustering
-cluster_data = df[["selling_price", "km_driven", "age"]]
-
-# Normalize the data
-cluster_data_scaled = scaler.fit_transform(cluster_data)
-
-# Ensure all values are finite
-cluster_data_scaled = np.nan_to_num(cluster_data_scaled)
-
-# Apply K-Means clustering
-kmeans = KMeans(n_clusters=3, random_state=100)
-df["segment"] = kmeans.fit_predict(cluster_data_scaled)
-
-# Visualize the clusters
-plt.figure(figsize=(10, 6))
-sns.scatterplot(x="km_driven", y="selling_price", hue="segment", data=df, palette="Set1")
-plt.title("Car Segments Based on Price, Kilometers Driven, and Age")
-plt.xlabel("Kilometers Driven")
-plt.ylabel("Selling Price")
-plt.legend(title="Segment")
-plt.show()
-
-# Prepare Data for ML Modeling
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
-
-# Ensure no infinite or NaN values in train/test data
-X_train = np.nan_to_num(X_train)
-X_test = np.nan_to_num(X_test)
-y_train = np.nan_to_num(y_train)
-y_test = np.nan_to_num(y_test)
-
-# Train Machine Learning Models
-# Linear Regression
+# Train models
+st.subheader("Training Models")
 lr = LinearRegression()
+rf = RandomForestRegressor(random_state=42)
+gb = GradientBoostingRegressor(random_state=42)
+
 lr.fit(X_train, y_train)
-y_pred_lr = lr.predict(X_test)
-
-# Random Forest
-rf = RandomForestRegressor()
 rf.fit(X_train, y_train)
-y_pred_rf = rf.predict(X_test)
-
-# Gradient Boosting
-gb = GradientBoostingRegressor()
 gb.fit(X_train, y_train)
-y_pred_gb = gb.predict(X_test)
 
-# Evaluation Function
-def evaluate_model(y_test, y_pred, model_name):
+
+# Model evaluation
+def evaluate_model(model, X_test, y_test, name):
+    y_pred = model.predict(X_test)
     mae = mean_absolute_error(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
     rmse = mse**0.5
     r2 = r2_score(y_test, y_pred)
-    print(f"{model_name} - MAE: {mae}, MSE: {mse}, RMSE: {rmse}, R²: {r2}")
+    return {"Model": name, "MAE": mae, "MSE": mse, "RMSE": rmse, "R²": r2}
 
-evaluate_model(y_test, y_pred_lr, "Linear Regression")
-evaluate_model(y_test, y_pred_rf, "Random Forest")
-evaluate_model(y_test, y_pred_gb, "Gradient Boosting")
 
-# Save and compress the best model (assuming Random Forest performs best)
-joblib.dump(rf, "best_model_compressed.pkl", compress=3)
+results = []
+results.append(evaluate_model(lr, X_test, y_test, "Linear Regression"))
+results.append(evaluate_model(rf, X_test, y_test, "Random Forest"))
+results.append(evaluate_model(gb, X_test, y_test, "Gradient Boosting"))
 
-# Save the fitted scaler and encoder
-joblib.dump(scaler, "scaler.pkl")
-joblib.dump(encoder, "encoder.pkl")
+st.write(pd.DataFrame(results))
 
-# Load the saved model and test on a new dataset
-# Load the original dataset
-df = pd.read_csv("CAR DETAILS.csv")
+# Save the best model (compressed)
+best_model = rf  # Assuming Random Forest performs the best
+joblib.dump(best_model, "best_model_compressed.pkl", compress=3)
+st.success("Best model saved as 'best_model_compressed.pkl'.")
 
-# Randomly pick 20 data points
-np.random.seed(42)
-sample_data = df.sample(n=20)
+# Make predictions on user input
+st.subheader("Make Predictions")
+uploaded_file = st.file_uploader(
+    "Upload a CSV file with new data (same format as the dataset):", type="csv"
+)
 
-# Separate features and target variable
-X_sample = sample_data.drop(columns=["selling_price"])
-y_sample = sample_data["selling_price"]
+if uploaded_file is not None:
+    sample_data = pd.read_csv(uploaded_file)
+    sample_data["age"] = 2024 - sample_data["year"]
+    sample_data.drop(columns=["name", "year"], inplace=True)
+    sample_data = pd.get_dummies(sample_data, columns=categorical_cols, drop_first=True)
+    sample_data = sample_data.reindex(columns=X.columns, fill_value=0)
+    sample_data_scaled = scaler.transform(sample_data)
 
-# Debugging: Check for null values in the sample data
-print("Null values in sample data before encoding:")
-print(X_sample.isnull().sum())
+    predictions = best_model.predict(sample_data_scaled)
+    st.write("Predictions:")
+    st.write(pd.DataFrame({"Predicted Selling Price": predictions}))
 
-# Encode sample data
-X_sample_encoded = pd.DataFrame(encoder.transform(X_sample[categorical_cols]).toarray(), columns=encoder.get_feature_names_out(categorical_cols))
-print("X_sample_encoded shape:", X_sample_encoded.shape)
+# Visualizations
+st.subheader("Visualizations")
+if st.checkbox("Show EDA Plots"):
+    # Price Distribution Across Car Ages
+    st.write("Price Distribution Across Different Car Ages")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.boxplot(x="age", y="selling_price", data=df, ax=ax)
+    st.pyplot(fig)
 
-# Drop original categorical columns
-X_sample = X_sample.drop(categorical_cols, axis=1)
-print("X_sample shape after dropping categorical columns:", X_sample.shape)
-
-# Ensure no duplicate rows before concatenation
-X_sample.reset_index(drop=True, inplace=True)
-X_sample_encoded.reset_index(drop=True, inplace=True)
-
-# Concatenate the encoded columns
-X_sample = pd.concat([X_sample, X_sample_encoded], axis=1)
-print("X_sample shape after concatenation:", X_sample.shape)
-
-# Ensure the columns match those of the training data
-X_sample = X_sample.reindex(columns=X.columns, fill_value=0)
-print("X_sample shape after reindexing:", X_sample.shape)
-
-# Ensure no infinite or NaN values in sample data
-X_sample_scaled = np.nan_to_num(scaler.transform(X_sample))
-
-# Predict using the loaded model
-loaded_model = joblib.load("best_model_compressed.pkl")
-y_sample_pred = loaded_model.predict(X_sample_scaled)
-
-# Verify the lengths match before creating DataFrame
-if len(y_sample.values) == len(y_sample_pred):
-    results = pd.DataFrame({"Actual": y_sample.values, "Predicted": y_sample_pred})
-    print(results)
-else:
-    print(f"Length mismatch: Actuals={len(y_sample.values)}, Predicted={len(y_sample_pred)}")
-
-# Evaluate the model on the sampled dataset
-if len(y_sample.values) == len(y_sample_pred):
-    print("Sampled Data - R²:", r2_score(y_sample, y_sample_pred))
-    print("Sampled Data - MAE:", mean_absolute_error(y_sample, y_sample_pred))
-    print("Sampled Data - MSE:", mean_squared_error(y_sample, y_sample_pred))
-else:
-    print("Skipping evaluation due to length mismatch.")
+    # Correlation Between Kilometers Driven and Selling Price
+    st.write("Kilometers Driven vs. Selling Price")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.scatterplot(x="km_driven", y="selling_price", data=df, ax=ax)
+    st.pyplot(fig)
